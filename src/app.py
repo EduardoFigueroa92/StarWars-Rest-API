@@ -5,7 +5,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planetas, Personajes, Naves, Favoritos
+from models import db, User, Planetas, Personajes, Naves, FavoritosPlaneta
 #from models import Person
 
 app = Flask(__name__)
@@ -67,25 +67,11 @@ def cargar_naves():
 
 @app.route('/users/favoritos', methods=['GET'])
 def cargar_favoritos():
+    planetasFavoritos= FavoritosPlaneta.query.all()
+    all_planetasFavoritos = list(map(lambda x: x.serialize(),planetasFavoritos))
 
-    favoritos = Favoritos.query.all()
-    all_favoritos = []
 
-    for favorito in favoritos:
-        favorito_data = favorito.serialize()
-
-        favorito_data['usuario'] = favorito.user.name if favorito.user else None
-
-        if favorito.planeta:
-            favorito_data['planeta'] = favorito.planeta.serialize()
-        if favorito.personaje:
-            favorito_data['personaje'] = favorito.personaje.serialize()
-        if favorito.nave:
-            favorito_data['nave'] = favorito.nave.serialize()
-
-        all_favoritos.append(favorito_data)
-
-    return jsonify(all_favoritos), 200
+    return jsonify({"planetas":all_planetasFavoritos}), 200
 
 @app.route('/users/<int:usuario_id>', methods=['GET'])
 def cargar_usuario(usuario_id):
@@ -197,11 +183,11 @@ def añadir_favorito_planeta(planeta_id, user_id):
         return jsonify({"error": "Planeta no encontrado"}), 404
 
     # Crear una nueva entrada en la tabla Favoritos
-    favorito_existente = Favoritos.query.filter_by(user_id=user_id, planeta_id=planeta_id).first()
+    favorito_existente = FavoritosPlaneta.query.filter_by(user_id=user_id, planeta_id=planeta_id).first()
     if favorito_existente:
         return jsonify({"error": "El planeta ya está en favoritos"}), 400
 
-    nuevo_favorito = Favoritos(user_id = user_id, planeta_id = planeta_id)
+    nuevo_favorito = FavoritosPlaneta(user_id = user_id, planeta_id = planeta_id)
     db.session.add(nuevo_favorito)
     db.session.commit()
 
@@ -222,28 +208,28 @@ def crear_personaje():
     }
 
     return jsonify(response_body), 200
-@app.route('/favorito/personaje/<int:personaje_id>/<int:user_id>', methods=['POST'])
-def añadir_favorito_personaje(personaje_id, user_id):
-    # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
+# @app.route('/favorito/personaje/<int:personaje_id>/<int:user_id>', methods=['POST'])
+# def añadir_favorito_personaje(personaje_id, user_id):
+#     # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
 
-    # Validar la existencia del planeta en la base de datos
-    personaje = Personajes.query.get(personaje_id)
-    if not personaje:
-        return jsonify({"error": "Personaje no encontrado"}), 404
+#     # Validar la existencia del planeta en la base de datos
+#     personaje = Personajes.query.get(personaje_id)
+#     if not personaje:
+#         return jsonify({"error": "Personaje no encontrado"}), 404
 
-    # Crear una nueva entrada en la tabla Favoritos
-    favorito_existente = Favoritos.query.filter_by(user_id=user_id, personaje_id=personaje_id).first()
-    if favorito_existente:
-        return jsonify({"error": "El personaje ya está en favoritos"}), 400
+#     # Crear una nueva entrada en la tabla Favoritos
+#     favorito_existente = Favoritos.query.filter_by(user_id=user_id, personaje_id=personaje_id).first()
+#     if favorito_existente:
+#         return jsonify({"error": "El personaje ya está en favoritos"}), 400
 
-    nuevo_favorito = Favoritos(user_id = user_id, personaje_id = personaje_id)
-    db.session.add(nuevo_favorito)
-    db.session.commit()
+#     nuevo_favorito = Favoritos(user_id = user_id, personaje_id = personaje_id)
+#     db.session.add(nuevo_favorito)
+#     db.session.commit()
 
-    response_body = {
-        "msg": f"Personaje '{personaje.name}' añadido a favoritos"
-    }
-    return jsonify(response_body), 200
+#     response_body = {
+#         "msg": f"Personaje '{personaje.name}' añadido a favoritos"
+#     }
+#     return jsonify(response_body), 200
 
 @app.route('/naves', methods=['POST'])
 def crear_nave():    
@@ -257,28 +243,28 @@ def crear_nave():
 
     return jsonify(response_body), 200
 
-@app.route('/favorito/naves/<int:nave_id>/<int:user_id>', methods=['POST'])
-def añadir_favorito_nave(nave_id, user_id):
-    # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
+# @app.route('/favorito/naves/<int:nave_id>/<int:user_id>', methods=['POST'])
+# def añadir_favorito_nave(nave_id, user_id):
+#     # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
 
-    # Validar la existencia del planeta en la base de datos
-    nave = Naves.query.get(nave_id)
-    if not nave:
-        return jsonify({"error": "Nave no encontrada"}), 404
+#     # Validar la existencia del planeta en la base de datos
+#     nave = Naves.query.get(nave_id)
+#     if not nave:
+#         return jsonify({"error": "Nave no encontrada"}), 404
 
-    # Crear una nueva entrada en la tabla Favoritos
-    favorito_existente = Favoritos.query.filter_by(user_id=user_id, nave_id=nave_id).first()
-    if favorito_existente:
-        return jsonify({"error": "La nave ya está en favoritos"}), 400
+#     # Crear una nueva entrada en la tabla Favoritos
+#     favorito_existente = Favoritos.query.filter_by(user_id=user_id, nave_id=nave_id).first()
+#     if favorito_existente:
+#         return jsonify({"error": "La nave ya está en favoritos"}), 400
 
-    nuevo_favorito = Favoritos(user_id = user_id, nave_id = nave_id)
-    db.session.add(nuevo_favorito)
-    db.session.commit()
+#     nuevo_favorito = Favoritos(user_id = user_id, nave_id = nave_id)
+#     db.session.add(nuevo_favorito)
+#     db.session.commit()
 
-    response_body = {
-        "msg": f"Nave '{nave.name}' añadida a favoritos"
-    }
-    return jsonify(response_body), 200
+#     response_body = {
+#         "msg": f"Nave '{nave.name}' añadida a favoritos"
+#     }
+#     return jsonify(response_body), 200
 
 @app.route('/users/<int:usuario_id>', methods=['PUT'])
 def editar_usuario(usuario_id):

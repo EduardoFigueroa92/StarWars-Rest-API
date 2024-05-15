@@ -13,6 +13,8 @@ class User(db.Model):
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)    
+
+    favoritosPlaneta = db.relationship("FavoritosPlaneta", backref='User', lazy=True)
     
     def __repr__(self):
         return '<User %r>' % self.name
@@ -22,24 +24,18 @@ class User(db.Model):
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "password": self.password
+            "favoritosPlaneta": self.favoritosPlaneta,
         }
     
-class Favoritos(db.Model):
+class FavoritosPlaneta(db.Model):
     __tablename__ = 'favoritos'
     id = db.Column(db.Integer, primary_key=True)
 
     user_id = db.Column(db.Integer, db.ForeignKey("Users.id"), nullable=False)
-    user = db.relationship("User", backref='favoritos', lazy=True)
+    
 
     planeta_id = db.Column(db.Integer, db.ForeignKey("planetas.id"))
-    planeta = db.relationship("Planetas", backref='favoritos', lazy=True)
-
-    personaje_id = db.Column(db.Integer, db.ForeignKey("personajes.id"))
-    personaje = db.relationship("Personajes", backref='favoritos', lazy=True)
-
-    nave_id = db.Column(db.Integer, db.ForeignKey("naves.id"))
-    nave = db.relationship("Naves", backref='favoritos', lazy=True)
+    
 
     def __repr__(self):
         return '<Favoritos %r>' % self.id
@@ -48,9 +44,7 @@ class Favoritos(db.Model):
         return {
             "id": self.id,
             "user_id": self.user_id,
-            "planeta": self.planeta.serialize() if self.planeta else None,
-            "personaje": self.personaje.serialize() if self.personaje else None,
-            "nave": self.nave.serialize() if self.nave else None
+            "planeta_id": self.planeta_id,
         }    
 
 class Planetas(db.Model):
@@ -63,6 +57,8 @@ class Planetas(db.Model):
     climate = db.Column(db.String(200))
     terrain = db.Column(db.String(200))
 
+    favoritosPlaneta = db.relationship("FavoritosPlaneta", backref='planeta', lazy=True)
+
     def __repr__(self):
         return '<Planetas %r>' % self.name
 
@@ -74,7 +70,8 @@ class Planetas(db.Model):
             "rotation_period": self.rotation_period,
             "population": self.population,
             "climate": self.climate,
-            "terrain": self.terrain
+            "terrain": self.terrain,
+            "favoritosPlaneta": self.favoritosPlaneta
         }
 
 class Personajes(db.Model):
