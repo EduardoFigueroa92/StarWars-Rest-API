@@ -1,99 +1,132 @@
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
-db = SQLAlchemy()
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///your_database.db'
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 class User(db.Model):
+    __tablename__ = 'Users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(80), unique=False, nullable=False)
-
-    planeta_id = db.Column(db.Integer, db.ForeignKey("planetas.planetas_id"))
-    planeta = db.relationship("Planetas")
-
-    personaje_id = db.Column(db.Integer, db.ForeignKey("personajes.id"))
-    personaje = db.relationship("Personajes", backref= "users", lazy= True)
-
-    nave_id = db.Column(db.Integer, db.ForeignKey("naves.id"))
-    nave = db.relationship("Naves", backref='users', lazy=True)
+    password = db.Column(db.String(80), unique=False, nullable=False)    
     
-    # vehiculo_id = db.Column(db.Integer, db.ForeignKey("Vehiculo.id"))
-
     def __repr__(self):
-        return '<USer &r>' % self.name
-    
+        return '<User %r>' % self.name
+
     def serialize(self):
-        return{
+        return {
             "id": self.id,
             "name": self.name,
             "email": self.email,
-            "password": self.password,
+            "password": self.password
         }
     
 class Favoritos(db.Model):
-    __tablename__ 'favoritos'    
-    id = db.Column(db.Integer,primary_key=True)
+    __tablename__ = 'favoritos'
+    id = db.Column(db.Integer, primary_key=True)
+
+    user_id = db.Column(db.Integer, db.ForeignKey("Users.id"), nullable=False)
+    user = db.relationship("User", backref='favoritos', lazy=True)
 
     planeta_id = db.Column(db.Integer, db.ForeignKey("planetas.id"))
-    planeta = db.relationship("Planetas", backref='users', lazy=True)
+    planeta = db.relationship("Planetas", backref='favoritos', lazy=True)
 
     personaje_id = db.Column(db.Integer, db.ForeignKey("personajes.id"))
-    personaje = db.relationship("Personajes", backref='users', lazy=True)
+    personaje = db.relationship("Personajes", backref='favoritos', lazy=True)
 
     nave_id = db.Column(db.Integer, db.ForeignKey("naves.id"))
-    nave = db.relationship("Naves", backref='users', lazy=True)
-    
-    
-class Planetas(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    planeta_id = db.Column(db.Integer)
-    name = db.Column(db.String(200))
-    diametro = db.Column(db.Integer)
-    clima = db.Column(db.String(200))
-
-    user = db.relationship("User")
+    nave = db.relationship("Naves", backref='favoritos', lazy=True)
 
     def __repr__(self):
-        return '<Planeta %r>' % self.name
+        return '<Favoritos %r>' % self.id
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "planeta": self.planeta.serialize() if self.planeta else None,
+            "personaje": self.personaje.serialize() if self.personaje else None,
+            "nave": self.nave.serialize() if self.nave else None
+        }    
+
+class Planetas(db.Model):
+    __tablename__ = 'planetas'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200))
+    diameter = db.Column(db.Integer)
+    rotation_period = db.Column(db.Integer)
+    population = db.Column(db.String(200))
+    climate = db.Column(db.String(200))
+    terrain = db.Column(db.String(200))
+
+    def __repr__(self):
+        return '<Planetas %r>' % self.name
 
     def serialize(self):
         return {
             "id": self.id,
             "name": self.name,
-            "diametro": self.diametro,
-            "clima": self.clima
-            }
-    
-    class Personajes(db.Model):
-        id = db.Column(db.Integer, primary_key=True)
-        name = db.Column(db.String(200))
-        altura = db.Column(db.Integer)
-        peso = db.Column(db.Integer)
-        color_piel = db.Column(db.String(200))
+            "diameter": self.diameter,
+            "rotation_period": self.rotation_period,
+            "population": self.population,
+            "climate": self.climate,
+            "terrain": self.terrain
+        }
 
-        user = db.relantionship("User", backref="personaje", lazy= True)
-
-        def __repr__(self):
-            return '<Personaje %r>' % self.name
-
-    
-    class Naves(db.Model):
+class Personajes(db.Model):
+    __tablename__ = 'personajes'
     id = db.Column(db.Integer, primary_key=True)
-    nombre = db.Column(db.String(200))
-    modelo = db.Column(db.String(200))
-    capacidad_tripulacion = db.Column(db.Integer)
-    carga = db.Column(db.Integer)
-    clase = db.Column(db.String(200))
+    name = db.Column(db.String(200))
+    height = db.Column(db.Integer)
+    mass = db.Column(db.Integer)
+    hair_color = db.Column(db.String(200))    
+    skin_color = db.Column(db.String(200))
+    eye_color = db.Column(db.String(200))
+    birth_year = db.Column(db.String(200))
+    gender = db.Column(db.String(200))
 
     def __repr__(self):
-        return '<Naves %r>' % self.nombre
+        return '<Personajes %r>' % self.name
 
     def serialize(self):
         return {
             "id": self.id,
-            "nombre": self.nombre,
-            "modelo": self.modelo,
-            "capacidad": self.capacidad,
+            "name": self.name,
+            "height": self.height,
+            "mass": self.mass,
+            "hair_color": self.hair_color,
+            "skin_color": self.skin_color,
+            "eye_color": self.eye_color,
+            "birth_year": self.birth_year,
+            "gender": self.gender
+        }
+    
+class Naves(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200))
+    model = db.Column(db.String(200))
+    manufacturer = db.Column(db.String(200))
+    cost_in_credits = db.Column(db.String(200))
+    length = db.Column(db.Float)
+    crew = db.Column(db.Integer)
+    passengers = db.Column(db.Integer)
+    
 
-        
+    def __repr__(self):
+        return '<Naves %r>' % self.name
 
+    def serialize(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "model": self.model,
+            "manufacturer": self.manufacturer,
+            "cost_in_credits": self.cost_in_credits,
+            "length": self.length,
+            "crew": self.crew,
+            "passengers": self.passengers
+        }
