@@ -5,7 +5,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planetas, Personajes, Naves, FavoritosPlaneta
+from models import db, User, Planetas, Personajes, Vehiculos, FavoritosPlaneta, FavoritosPersonaje, FavoritosVehiculo
 #from models import Person
 
 app = Flask(__name__)
@@ -33,6 +33,7 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
+
 @app.route('/users', methods=['GET'])
 def cargar_usuarios():
 
@@ -40,6 +41,7 @@ def cargar_usuarios():
     all_users = list(map(lambda x: x.serialize(), users))
 
     return jsonify(all_users), 200
+
 
 @app.route('/planetas', methods=['GET'])
 def cargar_planetas():
@@ -49,6 +51,7 @@ def cargar_planetas():
 
     return jsonify(all_planetas), 200
 
+
 @app.route('/personajes', methods=['GET'])
 def cargar_personajes():
 
@@ -57,21 +60,29 @@ def cargar_personajes():
 
     return jsonify(all_personajes), 200
 
+
 @app.route('/naves', methods=['GET'])
 def cargar_naves():
 
-    naves = Naves.query.all()
-    all_naves = list(map(lambda x: x.serialize(), naves))
+    vehiculos = Vehiculos.query.all()
+    all_vehiculos = list(map(lambda x: x.serialize(), vehiculos))
 
-    return jsonify(all_naves), 200
+    return jsonify(all_vehiculos), 200
+
 
 @app.route('/users/favoritos', methods=['GET'])
 def cargar_favoritos():
+
     planetasFavoritos= FavoritosPlaneta.query.all()
     all_planetasFavoritos = list(map(lambda x: x.serialize(),planetasFavoritos))
+    personajesFavoritos= FavoritosPersonaje.query.all()
+    all_personajesFavoritos = list(map(lambda x: x.serialize(),personajesFavoritos))
+    vehiculosFavoritos= FavoritosVehiculo.query.all()
+    all_vehiculosFavoritos = list(map(lambda x: x.serialize(),vehiculosFavoritos))
+#planetas favoritos y todos los planetas favoritos
 
+    return jsonify({"planetas":all_planetasFavoritos, "personajes":all_personajesFavoritos, "vehiculos":all_vehiculosFavoritos }), 200# añadir vehiculos 
 
-    return jsonify({"planetas":all_planetasFavoritos}), 200
 
 @app.route('/users/<int:usuario_id>', methods=['GET'])
 def cargar_usuario(usuario_id):
@@ -89,6 +100,7 @@ def cargar_usuario(usuario_id):
     }
 
     return jsonify(user_data), 200
+
 
 @app.route('/planetas/<int:planeta_id>', methods=['GET'])
 def cargar_planeta(planeta_id):
@@ -109,6 +121,7 @@ def cargar_planeta(planeta_id):
     }
 
     return jsonify(planeta_data), 200
+
 
 @app.route('/personajes/<int:personaje_id>', methods=['GET'])
 def cargar_personaje(personaje_id):
@@ -132,29 +145,32 @@ def cargar_personaje(personaje_id):
 
     return jsonify(personaje_data), 200
 
-@app.route('/naves/<int:nave_id>', methods=['GET'])
-def cargar_nave(nave_id):
 
-    nave = Naves.query.get(nave_id)
+@app.route('/vehiculos/<int:vehiculo_id>', methods=['GET'])
+def cargar_vehiculo(vehiculo_id):
 
-    if nave is None:
+    vehiculo = Vehiculos.query.get(vehiculo_id)
+
+    if vehiculo is None:
         raise APIException("Nave no encontrada", status_code=404)
     
-    nave_data = {
-        "id": nave.id,
-        "name": nave.name,
-        "model": nave.model,
-        "manufacturer": nave.manufacturer,
-        "cost_in_credits": nave.cost_in_credits,
-        "length": nave.length,
-        "crew": nave.crew,
-        "passengers": nave.passengers
+    vehiculo_data = {
+        "id": vehiculo.id,
+        "name": vehiculo.name,
+        "model": vehiculo.model,
+        "manufacturer": vehiculo.manufacturer,
+        "cost_in_credits": vehiculo.cost_in_credits,
+        "length": vehiculo.length,
+        "crew": vehiculo.crew,
+        "passengers": vehiculo.passengers
     }
 
-    return jsonify(nave_data), 200
+    return jsonify(vehiculo_data), 200
+
 
 @app.route('/users', methods=['POST'])
-def crear_usuario():    
+def crear_usuario(): 
+
     body = request.get_json()
     user= User(name=body['name'], email=body['email'], password=body['password'])
     db.session.add(user)
@@ -162,10 +178,13 @@ def crear_usuario():
     response_body = {
         "msg": "Usuario creado "
     }
+
     return jsonify(response_body), 200
 
+
 @app.route('/planetas', methods=['POST'])
-def crear_planeta():    
+def crear_planeta():  
+
     body = request.get_json()
     planeta = Planetas(name=body['name'], diameter=body['diameter'], rotation_period=body['rotation_period'], population=body['population'], climate=body['climate'], terrain=body['terrain'])
     db.session.add(planeta)
@@ -173,32 +192,39 @@ def crear_planeta():
     response_body = {
         "msg": "Planeta creado "
     }
+
     return jsonify(response_body), 200
+
 
 @app.route('/user/<int:user_id>/favorito/planeta/<int:planeta_id>', methods=['POST'])
 def añadir_favorito_planeta(planeta_id, user_id):    
     # Validar la existencia del planeta en la base de datos
     planeta = Planetas.query.get(planeta_id)
+
     if not planeta:
+
         return jsonify({"error": "Planeta no encontrado"}), 404
 
     # Crear una nueva entrada en la tabla Favoritos
     favorito_existente = FavoritosPlaneta.query.filter_by(user_id=user_id, planeta_id=planeta_id).first()
+
     if favorito_existente:
+        
         return jsonify({"error": "El planeta ya está en favoritos"}), 400
 
     nuevo_favorito = FavoritosPlaneta(user_id = user_id, planeta_id = planeta_id)
     db.session.add(nuevo_favorito)
     db.session.commit()
-
     response_body = {
         "msg": f"Planeta '{planeta.name}' añadido a favoritos"
     }
+
     return jsonify(response_body), 200
 
 
 @app.route('/personajes', methods=['POST'])
-def crear_personaje():    
+def crear_personaje():  
+
     body = request.get_json()
     personaje = Personajes(name=body['name'], height=body['height'], mass=body['mass'], hair_color=body['hair_color'], skin_color=body['skin_color'], eye_color=body['eye_color'], birth_year=body['birth_year'], gender=body['gender'] )
     db.session.add(personaje)
@@ -208,76 +234,105 @@ def crear_personaje():
     }
 
     return jsonify(response_body), 200
-# @app.route('/favorito/personaje/<int:personaje_id>/<int:user_id>', methods=['POST'])
-# def añadir_favorito_personaje(personaje_id, user_id):
-#     # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
 
-#     # Validar la existencia del planeta en la base de datos
-#     personaje = Personajes.query.get(personaje_id)
-#     if not personaje:
-#         return jsonify({"error": "Personaje no encontrado"}), 404
 
-#     # Crear una nueva entrada en la tabla Favoritos
-#     favorito_existente = Favoritos.query.filter_by(user_id=user_id, personaje_id=personaje_id).first()
-#     if favorito_existente:
-#         return jsonify({"error": "El personaje ya está en favoritos"}), 400
+@app.route('/favorito/personaje/<int:personaje_id>/<int:user_id>', methods=['POST'])
+def añadir_favorito_personaje(personaje_id, user_id):
+    # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
 
-#     nuevo_favorito = Favoritos(user_id = user_id, personaje_id = personaje_id)
-#     db.session.add(nuevo_favorito)
-#     db.session.commit()
+    # Validar la existencia del planeta en la base de datos
+    personaje = Personajes.query.get(personaje_id)
 
-#     response_body = {
-#         "msg": f"Personaje '{personaje.name}' añadido a favoritos"
-#     }
-#     return jsonify(response_body), 200
+    if not personaje:
 
-@app.route('/naves', methods=['POST'])
-def crear_nave():    
-    body = request.get_json()
-    nave = Naves(name=body['name'], model=body['model'], manufacturer=body['manufacturer'], cost_in_credits=body['cost_in_credits'], length=body['length'], crew=body['crew'], passengers=body['passengers'] )
-    db.session.add(nave)
+        return jsonify({"error": "Personaje no encontrado"}), 404
+
+    # Crear una nueva entrada en la tabla Favoritos
+    favorito_existente = FavoritosPersonaje.query.filter_by(user_id=user_id, personajes_id=personaje_id).first()
+
+    if favorito_existente:
+
+        return jsonify({"error": "El personaje ya está en favoritos"}), 400
+
+    nuevo_favorito = FavoritosPersonaje(user_id = user_id, personajes_id = personaje_id)
+    db.session.add(nuevo_favorito)
     db.session.commit()
     response_body = {
-        "msg": "Nave creada"
+        "msg": f"Personaje '{personaje.name}' añadido a favoritos"
     }
 
     return jsonify(response_body), 200
 
-# @app.route('/favorito/naves/<int:nave_id>/<int:user_id>', methods=['POST'])
-# def añadir_favorito_nave(nave_id, user_id):
-#     # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
 
-#     # Validar la existencia del planeta en la base de datos
-#     nave = Naves.query.get(nave_id)
-#     if not nave:
-#         return jsonify({"error": "Nave no encontrada"}), 404
+@app.route('/vehiculos', methods=['POST'])
+def crear_vehiculo():    
 
-#     # Crear una nueva entrada en la tabla Favoritos
-#     favorito_existente = Favoritos.query.filter_by(user_id=user_id, nave_id=nave_id).first()
-#     if favorito_existente:
-#         return jsonify({"error": "La nave ya está en favoritos"}), 400
+    body = request.get_json()
+    vehiculo = Vehiculos(name=body['name'], model=body['model'], manufacturer=body['manufacturer'], cost_in_credits=body['cost_in_credits'], length=body['length'], crew=body['crew'], passengers=body['passengers'] )
+    db.session.add(vehiculo)
+    db.session.commit()
+    response_body = {
+        "msg": "Vehiculo creado"
+    }
 
-#     nuevo_favorito = Favoritos(user_id = user_id, nave_id = nave_id)
-#     db.session.add(nuevo_favorito)
-#     db.session.commit()
+    return jsonify(response_body), 200
 
-#     response_body = {
-#         "msg": f"Nave '{nave.name}' añadida a favoritos"
-#     }
-#     return jsonify(response_body), 200
+
+#comparar con favoritos personaje y ajustar (igual)
+@app.route('/favorito/vehiculo/<int:vehiculo_id>/<int:user_id>', methods=['POST'])
+def añadir_favorito_vehiculo(vehiculo_id, user_id):
+    # Obtener el usuario actual (simulado, asegúrate de obtener el usuario real)
+
+    # Validar la existencia del vehiculo en la base de datos
+    vehiculo = Vehiculos.query.get(vehiculo_id)
+
+    if not vehiculo:
+
+        return jsonify({"error": "Vehiculo no encontrado"}), 404
+
+    # Crear una nueva entrada en la tabla Favoritos
+    favorito_existente = FavoritosVehiculo.query.filter_by(user_id=user_id, vehiculos_id=vehiculo_id).first()
+
+    if favorito_existente:
+
+        return jsonify({"error": "El vehiculo ya está en favoritos"}), 400
+
+    nuevo_favorito = FavoritosVehiculo(user_id = user_id, vehiculos_id = vehiculo_id)
+    db.session.add(nuevo_favorito)
+    db.session.commit()
+
+    response_body = {
+        "msg": f"Vehiculo '{vehiculo.name}' añadida a favoritos"
+    }
+
+    return jsonify(response_body), 200
+
+
+
+
+
+
+#despues hacer los deletes
+
+
+
+
+
 
 @app.route('/users/<int:usuario_id>', methods=['PUT'])
 def editar_usuario(usuario_id):
-    body = request.get_json()
 
+    body = request.get_json()
     user = User.query.get(usuario_id)
 
     if user is None:
         raise APIException("Usuario no encontrado", status_code=404)
     
     if body is not None:
+        
         if "name" in body:
             user.name = body["name"]
+
         if "email" in body:
             user.email = body["email"]
         
@@ -290,19 +345,21 @@ def editar_usuario(usuario_id):
             "name": user.name,
             "email": user.email
         }
+
         return jsonify(response_body), 200
+    
     else:
         raise APIException("No se proporcionaron datos para editar el usuario", status_code=400)
     
+
 @app.route('/planetas/<int:planeta_id>', methods=['PUT'])
 def editar_planeta(planeta_id):
-    body = request.get_json()
 
+    body = request.get_json()
     planeta = Planetas.query.get(planeta_id)
 
     if planeta is None:
         raise APIException("Planeta no encontrado", status_code=404)
-    
     if body is not None:
         if "name" in body:
             planeta.name = body["name"]
@@ -330,14 +387,16 @@ def editar_planeta(planeta_id):
             "climate": planeta.climate,
             "terrain": planeta.terrain
         }
+
         return jsonify(response_body), 200
     else:
         raise APIException("No se proporcionaron datos para editar el planeta", status_code=400)
     
+
 @app.route('/personajes/<int:personaje_id>', methods=['PUT'])
 def editar_personaje(personaje_id):
-    body = request.get_json()
 
+    body = request.get_json()
     personaje = Personajes.query.get(personaje_id)
 
     if personaje is None:
@@ -376,54 +435,58 @@ def editar_personaje(personaje_id):
             "birth_year": personaje.birth_year,
             "gender": personaje.gender
         }
+
         return jsonify(response_body), 200
+    
     else:
         raise APIException("No se proporcionaron datos para editar el personaje", status_code=400)
     
-@app.route('/naves/<int:nave_id>', methods=['PUT'])
-def editar_nave(nave_id):
+
+@app.route('/vehiculos/<int:vehiculo_id>', methods=['PUT'])
+def editar_vehiculo(vehiculo_id):
     body = request.get_json()
 
-    nave = Naves.query.get(nave_id)
+    vehiculo = Vehiculos.query.get(vehiculo_id)
 
-    if nave is None:
-        raise APIException("Nave no encontrada", status_code=404)
+    if vehiculo is None:
+        raise APIException("vehiculo no encontrado", status_code=404)
     
     if body is not None:
         if "name" in body:
-            nave.name = body["name"]
+            vehiculo.name = body["name"]
         if "model" in body:
-            nave.model = body["model"]
+            vehiculo.model = body["model"]
         if "manufacturer" in body:
-            nave.manufacturer = body["manufacturer"]
+            vehiculo.manufacturer = body["manufacturer"]
         if "cost_in_credits" in body:
-            nave.cost_in_credits = body["cost_in_credits"]
+            vehiculo.cost_in_credits = body["cost_in_credits"]
         if "length" in body:
-            nave.length = body["length"]
+            vehiculo.length = body["length"]
         if "crew" in body:
-            nave.crew = body["crew"]
+            vehiculo.crew = body["crew"]
         if "passengers" in body:
-            nave.passengers = body["passengers"]
+            vehiculo.passengers = body["passengers"]
 
 
         # Commit para guardar los cambios en la base de datos
         db.session.commit()
 
         response_body = {
-            "msg": "Nave editada exitosamente",
-            "id": nave.id,
-            "name": nave.name,
-            "model": nave.model,
-            "manufacturer": nave.manufacturer,
-            "cost_in_credits": nave.cost_in_credits,
-            "length": nave.length,
-            "crew": nave.crew,
-            "passengers": nave.passengers
+            "msg": "Vehiculo editado exitosamente",
+            "id": vehiculo.id,
+            "name": vehiculo.name,
+            "model": vehiculo.model,
+            "manufacturer": vehiculo.manufacturer,
+            "cost_in_credits": vehiculo.cost_in_credits,
+            "length": vehiculo.length,
+            "crew": vehiculo.crew,
+            "passengers": vehiculo.passengers
         }
         return jsonify(response_body), 200
     else:
-        raise APIException("No se proporcionaron datos para editar la nave", status_code=400)
+        raise APIException("No se proporcionaron datos para editar el vehiculo", status_code=400)
     
+
 @app.route('/users/<int:usuario_id>', methods=['DELETE'])
 def eliminar_usuario(usuario_id):
     body = request.get_json()
@@ -437,6 +500,7 @@ def eliminar_usuario(usuario_id):
     db.session.commit()
 
     return jsonify("Usuario eliminado"), 200
+
 
 @app.route('/planetas/<int:planeta_id>', methods=['DELETE'])
 def eliminar_planeta(planeta_id):
@@ -452,6 +516,7 @@ def eliminar_planeta(planeta_id):
 
     return jsonify("Planeta eliminado"), 200
 
+
 @app.route('/personajes/<int:personaje_id>', methods=['DELETE'])
 def eliminar_personaje(personaje_id):
     body = request.get_json()
@@ -466,19 +531,20 @@ def eliminar_personaje(personaje_id):
 
     return jsonify("Personaje eliminado"), 200
 
-@app.route('/naves/<int:nave_id>', methods=['DELETE'])
-def eliminar_nave(nave_id):
+
+@app.route('/vehiculos/<int:vehiculo_id>', methods=['DELETE'])
+def eliminar_vehiculo(nave_id):
     body = request.get_json()
 
-    nave = Naves.query.get(nave_id)
+    vehiculo = Vehiculos.query.get(vehiculo_id)
 
-    if nave is None:
-        raise APIException("Nave no encontrada", status_code=404)
+    if vehiculo is None:
+        raise APIException("Vehiculo no encontrado", status_code=404)
     
-    db.session.delete(nave)
+    db.session.delete(vehiculo)
     db.session.commit()
 
-    return jsonify("Nave eliminada"), 200
+    return jsonify("Vehiculo eliminado"), 200
 
 
 # this only runs if `$ python src/app.py` is executed
