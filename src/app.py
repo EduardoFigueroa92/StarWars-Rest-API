@@ -61,8 +61,8 @@ def cargar_personajes():
     return jsonify(all_personajes), 200
 
 
-@app.route('/naves', methods=['GET'])
-def cargar_naves():
+@app.route('/vehiculos', methods=['GET'])
+def cargar_vehiculos():
 
     vehiculos = Vehiculos.query.all()
     all_vehiculos = list(map(lambda x: x.serialize(), vehiculos))
@@ -302,10 +302,13 @@ def añadir_favorito_vehiculo(vehiculo_id, user_id):
     db.session.commit()
 
     response_body = {
-        "msg": f"Vehiculo '{vehiculo.name}' añadida a favoritos"
+        "msg": f"Vehiculo '{vehiculo.name}' añadido a favoritos"
     }
 
     return jsonify(response_body), 200
+
+
+
 
 
 
@@ -329,10 +332,8 @@ def editar_usuario(usuario_id):
         raise APIException("Usuario no encontrado", status_code=404)
     
     if body is not None:
-        
         if "name" in body:
             user.name = body["name"]
-
         if "email" in body:
             user.email = body["email"]
         
@@ -444,8 +445,8 @@ def editar_personaje(personaje_id):
 
 @app.route('/vehiculos/<int:vehiculo_id>', methods=['PUT'])
 def editar_vehiculo(vehiculo_id):
-    body = request.get_json()
 
+    body = request.get_json()
     vehiculo = Vehiculos.query.get(vehiculo_id)
 
     if vehiculo is None:
@@ -482,6 +483,7 @@ def editar_vehiculo(vehiculo_id):
             "crew": vehiculo.crew,
             "passengers": vehiculo.passengers
         }
+
         return jsonify(response_body), 200
     else:
         raise APIException("No se proporcionaron datos para editar el vehiculo", status_code=400)
@@ -489,8 +491,8 @@ def editar_vehiculo(vehiculo_id):
 
 @app.route('/users/<int:usuario_id>', methods=['DELETE'])
 def eliminar_usuario(usuario_id):
-    body = request.get_json()
 
+    body = request.get_json()
     user = User.query.get(usuario_id)
 
     if user is None:
@@ -504,8 +506,8 @@ def eliminar_usuario(usuario_id):
 
 @app.route('/planetas/<int:planeta_id>', methods=['DELETE'])
 def eliminar_planeta(planeta_id):
-    body = request.get_json()
 
+    body = request.get_json()
     planeta = Planetas.query.get(planeta_id)
 
     if planeta is None:
@@ -519,8 +521,8 @@ def eliminar_planeta(planeta_id):
 
 @app.route('/personajes/<int:personaje_id>', methods=['DELETE'])
 def eliminar_personaje(personaje_id):
-    body = request.get_json()
 
+    body = request.get_json()
     personaje = Personajes.query.get(personaje_id)
 
     if personaje is None:
@@ -533,9 +535,9 @@ def eliminar_personaje(personaje_id):
 
 
 @app.route('/vehiculos/<int:vehiculo_id>', methods=['DELETE'])
-def eliminar_vehiculo(nave_id):
-    body = request.get_json()
+def eliminar_vehiculo(vehiculo_id):
 
+    body = request.get_json()
     vehiculo = Vehiculos.query.get(vehiculo_id)
 
     if vehiculo is None:
